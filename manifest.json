@@ -1,0 +1,25 @@
+{
+    "name": "AJJA - Amor",
+    "short_name": "AJJA",
+    "description": "Site de Amor - Cinema, Fotos, Cartinhas e Chat",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#D4AF37",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "ajja.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "ajja.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        }
+    ],
+    "categories": ["social", "entertainment"],
+    "lang": "pt-BR"
+}
