@@ -5,19 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#08070a">
 <link rel="manifest" href="manifest.json">
-<title>AJJA ❤️</title>
-
-<!-- iOS PWA -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="AJJA">
-<link rel="apple-touch-icon" href="https://via.placeholder.com/512.png">
-<link rel="apple-touch-startup-image" href="https://via.placeholder.com/512.png">
-
-<!-- Android / PWA -->
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="application-name" content="AJJA">
-<link rel="shortcut icon" href="https://via.placeholder.com/512.png" type="image/png">
+<title>AJJA</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Pinyon+Script&display=swap" rel="stylesheet">
 <style>
 /* ===== RESET & ROOT ===== */
@@ -813,7 +801,7 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
 <!-- ████ LOGIN ████ -->
 <div class="screen" id="scr-login">
   <div class="login-wrap">
-    <div class="brand-ring"><img src="https://via.placeholder.com/512.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>
+    <div class="brand-ring"><img src="ajja.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>
     <div class="brand-name">AJJA</div>
     <div class="brand-sub">nossa história</div>
     <div class="login-card">
@@ -838,7 +826,7 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
   <div class="topbar">
     <div class="topbar-logo" id="tb-logo" title="Meu perfil">
       <span id="tb-logo-emoji" style="display:none">💑</span>
-      <img id="tb-logo-img" src="https://via.placeholder.com/512.png" style="display:block" alt="">
+      <img id="tb-logo-img" src="ajja.png" style="display:block" alt="">
     </div>
     <div class="tb-title" id="tb-title">Início</div>
     <div class="tb-right">
@@ -1031,7 +1019,7 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
 </div><!-- /scr-app -->
   <div class="app-prompt" id="app-prompt" onclick="installPWA()">
     <button class="close-app" onclick="event.stopPropagation();document.getElementById('app-prompt').style.display='none'">×</button>
-    <img src="https://via.placeholder.com/512.png" style="width:20px;height:20px;border-radius:4px;object-fit:cover">
+    <img src="ajja.png" style="width:20px;height:20px;border-radius:4px;object-fit:cover">
     <span>AJJA - Instalar APP</span>
   </div>
 
@@ -1120,7 +1108,6 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
 
 <script>
 /* ============================================================
@@ -1156,9 +1143,23 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
   window.addEventListener('resize',sz);sz();draw();
 })();
 
+
 /* ============================================================
-   FIREBASE
+   NOTIFICATIONS & BADGE
    ============================================================ */
+function playNotificationSound(){
+  const audio=new Audio('https://www.dropbox.com/scl/fi/pnsue7d8xtwpfg1ttlwhg/som-notifica-ajja.mp3?rlkey=7zklkwgza77nbucrads1a5ioa&st=hu0ipev8&dl=1');
+  audio.play().catch(e=>console.warn('Audio play blocked:',e.message));
+}
+
+async function updateAppBadge(count){
+  if(!navigator.setAppBadge) return;
+  try{
+    if(count > 0) await navigator.setAppBadge(count);
+    else await navigator.clearAppBadge();
+  }catch(e){console.warn('Badge error:',e.message)}
+}
+
 const FB_CFG={
   apiKey:"AIzaSyDFQCMsX04fwh7MVyEpvXnXD0U4TD5Or5w",
   authDomain:"ja-barbearia.firebaseapp.com",
@@ -1320,8 +1321,6 @@ function init(){
 
   // Step 3: try to sync from Firebase in the background (non-blocking)
   syncFromFirebase();
-  setupNotifications();
-
 
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW reg failed',e));
@@ -1438,29 +1437,28 @@ function setupRealtimeListeners(){
     let msgs=snap.val();
     if(!msgs) msgs=[];
     if(!Array.isArray(msgs)) msgs=Object.values(msgs);
+    
+    const prevLen=D.messages.length;
     D.messages=msgs;
     saveLocal();
     renderChat();
-    if(document.querySelector('[data-p="chat"].active')===null){
-      const newCount=msgs.filter(m=>m.u!==ME.u).length;
-      const diff=newCount-lastMsgCount;
-      if(diff>0){
-        const badge=document.getElementById('bn-chat-badge');
-        const cur=parseInt(badge.dataset.count||'0');
-        badge.dataset.count=String(cur+diff);
-        
-        // Notificação local para nova mensagem
-        const lastMsg = msgs[msgs.length-1];
-        if(lastMsg && lastMsg.u !== ME.u) {
-            new Notification('Nova mensagem de ' + (D.users[lastMsg.u]?.n || lastMsg.u), {
-                body: lastMsg.txt || 'Enviou algo novo!',
-                icon: 'ajja.png'
-            });
-        }
+
+    if(msgs.length > prevLen){
+      const lastMsg=msgs[msgs.length-1];
+      if(lastMsg && lastMsg.u !== ME.u){
+        playNotificationSound();
       }
-      lastMsgCount=newCount;
+    }
+
+    if(document.querySelector('[data-p="chat"].active')===null){
+      const unreadCount=msgs.filter(m=>m.u!==ME.u && m.status!=='read').length;
+      updateAppBadge(unreadCount);
+      
+      const badge=document.getElementById('bn-chat-badge');
+      if(badge) badge.dataset.count=String(unreadCount);
     }
   });
+
 
   db.ref('users').on('value',snap=>{
     if(!snap.exists()) return;
@@ -1528,9 +1526,25 @@ function nav(name,btn){
   }
   document.getElementById('tb-title').textContent=PAGE_TITLES[name]||name;
   if(name==='chat'){
+    markMessagesAsRead();
     document.getElementById('bn-chat-badge').dataset.count='0';
-    lastMsgCount=(D.messages||[]).filter(m=>m.u!==ME?.u).length;
+    updateAppBadge(0);
     setTimeout(scrollChat,80);
+  }
+}
+
+function markMessagesAsRead(){
+  if(!ME || !D.messages) return;
+  let changed=false;
+  D.messages.forEach(m=>{
+    if(m.u !== ME.u && m.status !== 'read'){
+      m.status='read';
+      changed=true;
+    }
+  });
+  if(changed){
+    saveSection('messages');
+    renderChat();
   }
 }
 
@@ -1967,6 +1981,7 @@ async function onChatImg(e){
 }
 function pushMsg(msg){
   if(!D.messages) D.messages=[];
+  msg.status = msg.status || 'sent';
   D.messages.push(msg);
   saveSection('messages');
   renderChat();
@@ -2152,9 +2167,9 @@ function compress(file,maxPx){
         let w=img.width,h=img.height;
         if(maxPx&&(w>maxPx||h>maxPx)){
           const r=Math.min(maxPx/w,maxPx/h);
-           w=Math.round(w*r);h=Math.round(h*r);
-
-         const cv=document.createElement('canvas');
+          w=Math.round(w*r);h=Math.round(h*r);
+        }
+        const cv=document.createElement('canvas');
         cv.width=w;cv.height=h;
         cv.getContext('2d').drawImage(img,0,0,w,h);
         res(cv.toDataURL('image/jpeg',.82));
@@ -2192,16 +2207,6 @@ function toast(msg,ms=2800){
   clearTimeout(_toastTimer);
   _toastTimer=setTimeout(()=>el.classList.remove('on'),ms);
 }
-
-function setupNotifications(){
-  if(!('Notification' in window)) return;
-  Notification.requestPermission().then(permission => {
-    if(permission === 'granted') {
-      console.log('Notificações permitidas');
-    }
-  });
-}
-
 
 /* ============================================================
    AUDIO RECORDING
@@ -2318,20 +2323,6 @@ async function processAndSendAudio(){
 
 // Patch renderChat to support audio messages
 const _origRenderChat=renderChat;
-function markMessagesAsRead(){
-  if(!ME || !D.messages) return;
-  let changed = false;
-  D.messages.forEach((m, i) => {
-    if(m.u !== ME.u && !m.seen) {
-      D.messages[i].seen = true;
-      changed = true;
-    }
-  });
-  if(changed) {
-    saveSection('messages');
-  }
-}
-
 function renderChat(){
   const area=document.getElementById('chat-scroller');
   if(!D.messages||!D.messages.length){
@@ -2380,16 +2371,14 @@ function renderChat(){
       }
     }
 
-     return `${sep}<div class="msg-grp ${isMine?'me':'them'}">
-       ${!isMine?`<div class="msg-sender">${esc(sender)}</div>`:''}
-       <div class="msg-bubble" style="position:relative">
-         ${replyRef}${content}
-         <button class="reply-btn" onclick="setReply(${i})">↩</button>
-         ${isMine ? `<span style="font-size:10px;opacity:.6;margin-left:4px">${m.seen ? '✓✓' : '✓'} ${m.audio && m.played ? '🎧' : ''}</span>` : ''}
-       </div>
-       <div class="msg-time">${time}</div>
-     </div>`;
-
+    return `${sep}<div class="msg-grp ${isMine?'me':'them'}">
+      ${!isMine?`<div class="msg-sender">${esc(sender)}</div>`:''}
+      <div class="msg-bubble" style="position:relative">
+        ${replyRef}${content}
+        <button class="reply-btn" onclick="setReply(${i})">↩</button>
+      </div>
+      <div class="msg-time">${time}${isMine?`<span style="margin-left:4px;font-size:10px;opacity:.7">${m.status==='read'?'✓✓':'✓'}</span>`:''}</div>
+    </div>`;
   }).join('');
   scrollChat();
 }
@@ -2419,19 +2408,11 @@ function playAudio(btn,index){
     if(_curWave) _curWave.classList.remove('playing');
   }
 
-   const audio=new Audio();
-   audio.src=src;
-   audio.load();
-   _curAudio=audio;_curBtn=btn;_curWave=wave;
-   
-   // Marcar como escutado
-   if(index !== undefined) {
-     D.messages[index].played = true;
-     saveSection('messages');
-   }
-   
-   btn.textContent='⏸';
-
+  const audio=new Audio();
+  audio.src=src;
+  audio.load();
+  _curAudio=audio;_curBtn=btn;_curWave=wave;
+  btn.textContent='⏸';
   if(wave) wave.classList.add('playing');
 
   audio.onended=()=>{
