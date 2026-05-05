@@ -1263,6 +1263,11 @@ function saveUserField(uid,field,val){
    INIT — login is available immediately, Firebase loads async
    ============================================================ */
 function init(){
+  // Check if app is already installed
+  if(window.matchMedia('(display-mode: standalone)').matches){
+    document.getElementById('app-prompt').style.display='none';
+  }
+
   // Step 1: load from localStorage immediately — login works right away
   loadLocal();
 
@@ -2407,7 +2412,9 @@ async function installPWA(){
   }
   deferredPrompt.prompt();
   const {outcome} = await deferredPrompt.userChoice;
-  console.log(`User response to install prompt: ${outcome}`);
+  if(outcome==='accepted'){
+    document.getElementById('app-prompt').style.display='none';
+  }
   deferredPrompt = null;
 }
 
