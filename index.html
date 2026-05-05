@@ -1527,81 +1527,9 @@ function setupRealtimeListeners(){
   });
 }
 
-
-  db.ref('users').on('value',snap=>{
-    if(!snap.exists()) return;
-    const users=snap.val();
-    if(!users || typeof users!=='object') return;
-    
-    // Notify if someone's mood or status changed (and it's not ME)
-    if(ME && JSON.stringify(users) !== JSON.stringify(D.users)){
-      // Simple check: if the change is not in my own user object
-      const myOld=D.users[ME.u];
-      const myNew=users[ME.u];
-      if(JSON.stringify(myOld) !== JSON.stringify(myNew)){
-        // I changed, maybe don't play sound
-      } else {
-        playNotificationSound();
-      }
-    }
-
-    D.users=users;
-    saveLocal();
-    renderAll();
-  });
-
-  db.ref('status').on('value',snap=>{
-    const statuses=snap.val();
-    const el=document.getElementById('chat-status-indicator');
-    if(!el) return;
-    if(!statuses||!ME) {el.textContent='';return}
-    let txt='';
-    const others=Object.entries(statuses).filter(([uid])=>uid!==ME.u);
-    if(others.length>0){
-      const rec=others.find(([uid,s])=>s.recording);
-      if(rec){
-        txt=`${D.users[rec[0]]?.n||rec[0]} está gravando áudio... 🎙️`;
-      }else{
-        const typ=others.find(([uid,s])=>s.typing);
-        if(typ)txt=`${D.users[typ[0]]?.n||typ[0]} está digitando...`;
-      }
-    }
-    el.textContent=txt;
-  });
-
-  db.ref('wishes').on('value',snap=>{
-    if(!ME) return;
-    let w=snap.val();
-    if(!w) w=[];
-    if(!Array.isArray(w)) w=Object.values(w);
-    if(w.length !== D.wishes.length) playNotificationSound();
-    D.wishes=w;
-    saveLocal();
-    renderWishes();
-  });
-
-  db.ref('timeline').on('value',snap=>{
-    if(!ME) return;
-    let tl=snap.val();
-    if(!tl) tl=[];
-    if(!Array.isArray(tl)) tl=Object.values(tl);
-    if(tl.length !== D.timeline.length) playNotificationSound();
-    D.timeline=tl;
-    saveLocal();
-    renderTimeline();
-  });
-
-  db.ref('dates').on('value',snap=>{
-    if(!ME) return;
-    let d=snap.val();
-    if(!d) d=[];
-    if(!Array.isArray(d)) d=Object.values(d);
-    if(d.length !== D.dates.length) playNotificationSound();
-    D.dates=d;
-    saveLocal();
-    renderDates();
-  });
-}
+/* ============================================================
+   NAV
+   ============================================================ */
 
 /* ============================================================
    NAV
