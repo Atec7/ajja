@@ -836,6 +836,7 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
       <div class="tb-pill" id="tb-pill">
         <div class="tb-dot" id="tb-dot"></div>
         <span id="tb-other-name">—</span>
+        <span id="tb-status" style="font-size:10px; opacity:.7; margin-left:4px"></span>
       </div>
       <div class="ib" id="tb-users-btn" title="Usuários" style="display:none">👥</div>
       <div class="ib" onclick="doLogout()" title="Sair" style="font-size:13px">🚪</div>
@@ -1622,6 +1623,12 @@ function updateOtherStatus(){
   const o=D.users[ok];
   document.getElementById('tb-other-name').textContent=o.n;
   document.getElementById('tb-dot').classList.toggle('on',!!o.on);
+  
+  const statusEl=document.getElementById('tb-status');
+  if(statusEl){
+    statusEl.textContent = o.on ? 'Online' : (o.ls ? 'visto há ' + ago(o.ls) : 'offline');
+    statusEl.style.color = o.on ? 'var(--green)' : 'var(--text2)';
+  }
 }
 setInterval(updateOtherStatus,15000);
 
