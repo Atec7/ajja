@@ -1270,6 +1270,7 @@ function saveLocal(){
 function saveSection(key){
   saveLocal();
   if(!db) return;
+  if(key==='messages') return; // Messages are pushed individually to avoid race conditions
   let val=D[key];
   if(key==='messages'&&Array.isArray(val)&&val.length>300) val=val.slice(-300);
   fbSet(key,val);
@@ -2020,8 +2021,13 @@ function pushMsg(msg){
   if(!D.messages) D.messages=[];
   msg.status = msg.status || 'sent';
   D.messages.push(msg);
-  saveSection('messages');
+  
+  saveLocal();
   renderChat();
+  
+  if(db){
+    db.ref('messages').push(msg).catch(e=>console.warn('fbPush msg error',e.message));
+  }
 }
 
 let _lastChatDate='';
