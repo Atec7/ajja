@@ -1396,6 +1396,10 @@ function doLogin(){
   renderAll();
   startCounter();
   setupRealtimeListeners();
+  // Initialize badge counter based on activity since last login
+  setTimeout(initBadgeOnLogin, 1500);
+  // Clear badge when user is active in app
+  clearAppBadge();
 }
 
 function doLogout(){
@@ -1433,6 +1437,10 @@ function setupRealtimeListeners(){
         const badge=document.getElementById('bn-chat-badge');
         const cur=parseInt(badge.dataset.count||'0');
         badge.dataset.count=String(cur+diff);
+        // Play notification sound for new messages from others
+        playNotificationSound();
+        // Update app badge (PWA badge API)
+        addAppBadge(diff);
       }
       lastMsgCount=newCount;
     }
@@ -1507,6 +1515,8 @@ function nav(name,btn){
     document.getElementById('bn-chat-badge').dataset.count='0';
     lastMsgCount=(D.messages||[]).filter(m=>m.u!==ME?.u).length;
     setTimeout(scrollChat,80);
+    // Clear app badge when user opens chat
+    clearAppBadge();
   }
 }
 
@@ -2393,6 +2403,111 @@ function playAudio(btn,index){
       toast('❌ Não foi possível reproduzir');
       btn.textContent='▶';
     });
+  }
+}
+
+/* ============================================================
+   NOTIFICATION SOUND
+   ============================================================ */
+let _notifAudio = null;
+let _lastNotifTime = 0;
+
+function playNotificationSound() {
+  const now = Date.now();
+  // Throttle: no more than once every 2 seconds
+  if (now - _lastNotifTime < 2000) return;
+  _lastNotifTime = now;
+
+  try {
+    // Convert Dropbox share link to direct download link
+    const dropboxUrl = 'https://www.dropbox.com/scl/fi/pnsue7d8xtwpfg1ttlwhg/som-notifica-ajja.mp3?rlkey=7zklkwgza77nbucrads1a5ioa&st=3uvh48dx&dl=1';
+    
+    if (!_notifAudio) {
+      _notifAudio = new Audio(dropboxUrl);
+      _notifAudio.volume = 0.75;
+      _notifAudio.preload = 'auto';
+    }
+    _notifAudio.currentTime = 0;
+    const p = _notifAudio.play();
+    if (p !== undefined) {
+      p.catch(() => {
+        // Autoplay blocked — create fresh instance on next user interaction
+        _notifAudio = null;
+      });
+    }
+  } catch(e) {
+    console.warn('Notification sound error:', e);
+  }
+}
+
+// Unlock audio on first user interaction (required by browsers)
+let _audioUnlocked = false;
+function unlockAudio() {
+  if (_audioUnlocked) return;
+  _audioUnlocked = true;
+  const silentUrl = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAA' +
+    'EAAQAARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+  const a = new Audio(silentUrl);
+  a.play().catch(() => {});
+}
+document.addEventListener('touchstart', unlockAudio, {once: true});
+document.addEventListener('click', unlockAudio, {once: true});
+
+/* ============================================================
+   APP BADGE (PWA Badge API + localStorage counter)
+   ============================================================ */
+const BADGE_KEY = 'ajja_badge_count';
+const BADGE_LOGIN_KEY = 'ajja_last_login';
+
+function getStoredBadge() {
+  return parseInt(localStorage.getItem(BADGE_KEY) || '0');
+}
+
+function addAppBadge(n) {
+  const current = getStoredBadge();
+  const newVal = current + n;
+  localStorage.setItem(BADGE_KEY, String(newVal));
+  setAppBadge(newVal);
+}
+
+function clearAppBadge() {
+  localStorage.setItem(BADGE_KEY, '0');
+  setAppBadge(0);
+}
+
+function setAppBadge(count) {
+  // Native PWA Badge API (supported on Android/Desktop Chrome PWA)
+  if ('setAppBadge' in navigator) {
+    if (count > 0) {
+      navigator.setAppBadge(count).catch(() => {});
+    } else {
+      navigator.clearAppBadge().catch(() => {});
+    }
+  }
+  // Also update the SW to store the badge count
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'SET_BADGE',
+      count: count
+    });
+  }
+}
+
+function initBadgeOnLogin() {
+  // On login, calculate new activity since last login
+  const lastLogin = parseInt(localStorage.getItem(BADGE_LOGIN_KEY) || '0');
+  const now = Date.now();
+  localStorage.setItem(BADGE_LOGIN_KEY, String(now));
+
+  // Count messages received from others since last login
+  if (lastLogin > 0 && D.messages) {
+    const newMsgs = D.messages.filter(m => m.u !== ME?.u && m.ts > lastLogin).length;
+    if (newMsgs > 0) {
+      const stored = getStoredBadge();
+      const total = Math.max(stored, newMsgs);
+      localStorage.setItem(BADGE_KEY, String(total));
+      setAppBadge(total);
+    }
   }
 }
 
