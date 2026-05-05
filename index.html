@@ -1108,6 +1108,7 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
 
 <script>
 /* ============================================================
@@ -1155,12 +1156,90 @@ const FB_CFG={
   messagingSenderId:"213237027963",
   appId:"1:213237027963:web:7d585b158ee06d3ab7fede"
 };
-let db=null,fbOnline=false;
+let db=null,fbOnline=false,messaging=null;
 try{
   firebase.initializeApp(FB_CFG);
   db=firebase.database();
   db.ref('.info/connected').on('value',s=>{fbOnline=!!s.val()});
+  if(firebase.messaging && firebase.messaging.isSupported && firebase.messaging.isSupported()){
+    messaging=firebase.messaging();
+  }
 }catch(e){console.warn('FB init:',e.message)}
+
+/* ============================================================
+   PUSH NOTIFICATIONS (Web Push / FCM)
+   ============================================================ */
+// VAPID public key — replace with your own from Firebase Console >
+// Project Settings > Cloud Messaging > Web Push certificates > Key pair
+const VAPID_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa40kJ7p6OqJLGK3W1XhKdvPEg5J6S7KPnHY7cHBRE_TGi6v28eTXAR5N3I4cE';
+
+function saveFCMToken(token){
+  if(!db||!ME) return;
+  db.ref('fcmTokens/'+ME.u).set({token, uid:ME.u, n:ME.n||ME.u, ts:Date.now()})
+    .catch(e=>console.warn('saveFCMToken:',e.message));
+}
+
+async function initPushNotifications(){
+  if(!('Notification' in window)) return;
+  let perm = Notification.permission;
+  if(perm === 'default') perm = await Notification.requestPermission();
+  if(perm !== 'granted') return;
+
+  if(messaging){
+    try{
+      const token = await messaging.getToken({vapidKey: VAPID_KEY});
+      if(token){
+        saveFCMToken(token);
+        messaging.onMessage(payload=>{
+          const body = payload.notification?.body || 'Nova mensagem ❤️';
+          if(document.querySelector('[data-p="chat"].active')) return;
+          showInAppNotification(payload.notification?.title||'💌 AJJA', body);
+          playNotificationSound();
+        });
+      }
+    }catch(e){ console.warn('FCM token error:',e.message); }
+  } else {
+    // Basic notifications without FCM (foreground/background via SW)
+    console.log('FCM not supported; using basic Notifications API');
+  }
+
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.addEventListener('message', e=>{
+      if(e.data && e.data.type==='NOTIF_CLICK') nav('chat');
+    });
+  }
+}
+
+function showInAppNotification(title, body){
+  if(document.hidden && Notification.permission==='granted'){
+    try{
+      const n=new Notification(title,{body,icon:'./ajja.png',badge:'./ajja.png',
+        tag:'ajja-msg',renotify:true,vibrate:[200,100,200]});
+      n.onclick=()=>{ window.focus(); nav('chat'); n.close(); };
+    }catch(e){ toast('💌 '+body); }
+  } else {
+    toast('💌 '+body);
+  }
+}
+
+async function sendPushToOther(senderName, msgText){
+  if(!db||!ME) return;
+  const otherUid=Object.keys(D.users||{}).find(k=>k!==ME.u);
+  if(!otherUid) return;
+  try{
+    const snap=await db.ref('fcmTokens/'+otherUid).once('value');
+    const tokenData=snap.val();
+    if(!tokenData||!tokenData.token) return;
+    // Queue a notification — a Cloud Function would pick this up and call FCM API
+    // Without a CF, the other user's SW will deliver it when FCM pushes
+    db.ref('notifQueue/'+Date.now()).set({
+      to:otherUid, token:tokenData.token,
+      title:senderName+' 💌',
+      body:msgText.length>60?msgText.substring(0,57)+'...':msgText,
+      ts:Date.now()
+    }).catch(()=>{});
+  }catch(e){}
+}
 
 function fbSet(path,val){
   if(!db)return;
@@ -1398,6 +1477,8 @@ function doLogin(){
   setupRealtimeListeners();
   // Initialize badge counter based on activity since last login
   setTimeout(initBadgeOnLogin, 1500);
+  // Request push notification permission & register FCM token
+  setTimeout(initPushNotifications, 2000);
   // Clear badge when user is active in app
   clearAppBadge();
 }
@@ -1439,6 +1520,13 @@ function setupRealtimeListeners(){
         badge.dataset.count=String(cur+diff);
         // Play notification sound for new messages from others
         playNotificationSound();
+        // Show browser notification if app is backgrounded
+        const lastMsg=msgs.filter(m=>m.u!==ME.u).slice(-1)[0];
+        if(lastMsg){
+          const sName=D.users[lastMsg.u]?.n||lastMsg.u;
+          const preview=lastMsg.txt||(lastMsg.img?'📷 Imagem':'🎙️ Áudio');
+          showInAppNotification(sName+' 💌', preview);
+        }
         // Update app badge (PWA badge API)
         addAppBadge(diff);
       }
@@ -1956,6 +2044,10 @@ function pushMsg(msg){
   D.messages.push(msg);
   saveSection('messages');
   renderChat();
+  // Notify the other user (push notification)
+  const senderName = ME?.n || ME?.u || 'Alguém';
+  const preview = msg.txt || (msg.img ? '📷 Imagem' : '🎙️ Áudio');
+  sendPushToOther(senderName, preview);
 }
 
 let _lastChatDate='';
