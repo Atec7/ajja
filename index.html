@@ -2152,18 +2152,9 @@ function compress(file,maxPx){
         let w=img.width,h=img.height;
         if(maxPx&&(w>maxPx||h>maxPx)){
           const r=Math.min(maxPx/w,maxPx/h);
-          w=Math.round(w*r);h=Math.round(h*r);
-function setupNotifications(){
-  if(!('Notification' in window)) return;
-  Notification.requestPermission().then(permission => {
-    if(permission === 'granted') {
-      console.log('Notificações permitidas');
-      // Aqui integraríamos com o FCM para receber o token
-    }
-  });
-}
+           w=Math.round(w*r);h=Math.round(h*r);
 
-        const cv=document.createElement('canvas');
+         const cv=document.createElement('canvas');
         cv.width=w;cv.height=h;
         cv.getContext('2d').drawImage(img,0,0,w,h);
         res(cv.toDataURL('image/jpeg',.82));
@@ -2201,6 +2192,16 @@ function toast(msg,ms=2800){
   clearTimeout(_toastTimer);
   _toastTimer=setTimeout(()=>el.classList.remove('on'),ms);
 }
+
+function setupNotifications(){
+  if(!('Notification' in window)) return;
+  Notification.requestPermission().then(permission => {
+    if(permission === 'granted') {
+      console.log('Notificações permitidas');
+    }
+  });
+}
+
 
 /* ============================================================
    AUDIO RECORDING
@@ -2330,6 +2331,8 @@ function markMessagesAsRead(){
     saveSection('messages');
   }
 }
+
+function renderChat(){
   const area=document.getElementById('chat-scroller');
   if(!D.messages||!D.messages.length){
     area.innerHTML='<div class="empty-state"><span class="es-icon">💬</span><p>Nenhuma mensagem.<br>Diga oi! 👋</p></div>';
