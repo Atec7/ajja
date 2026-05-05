@@ -3,7 +3,7 @@ const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './ajja.png'
+  'https://via.placeholder.com/512.png'
 ];
 
 self.addEventListener('install', e => {
@@ -55,4 +55,21 @@ self.addEventListener('fetch', e => {
       }).catch(() => cached);
     })
   );
+});
+
+self.addEventListener('push', e => {
+  const data = e.data ? e.data.json() : {};
+  const title = data.title || 'AJJA ❤️';
+  const options = {
+    body: data.body || 'Você tem uma nova mensagem!',
+    icon: 'https://via.placeholder.com/512.png',
+    badge: 'https://via.placeholder.com/512.png',
+    data: { url: data.url || './index.html' }
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.openWindow(e.notification.data.url));
 });

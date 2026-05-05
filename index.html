@@ -11,13 +11,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="AJJA">
-<link rel="apple-touch-icon" href="ajja.png">
-<link rel="apple-touch-startup-image" href="ajja.png">
+<link rel="apple-touch-icon" href="https://via.placeholder.com/512.png">
+<link rel="apple-touch-startup-image" href="https://via.placeholder.com/512.png">
 
 <!-- Android / PWA -->
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="AJJA">
-<link rel="shortcut icon" href="ajja.png" type="image/png">
+<link rel="shortcut icon" href="https://via.placeholder.com/512.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Pinyon+Script&display=swap" rel="stylesheet">
 <style>
 /* ===== RESET & ROOT ===== */
@@ -813,7 +813,7 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
 <!-- ████ LOGIN ████ -->
 <div class="screen" id="scr-login">
   <div class="login-wrap">
-    <div class="brand-ring"><img src="ajja.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>
+    <div class="brand-ring"><img src="https://via.placeholder.com/512.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>
     <div class="brand-name">AJJA</div>
     <div class="brand-sub">nossa história</div>
     <div class="login-card">
@@ -838,7 +838,7 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
   <div class="topbar">
     <div class="topbar-logo" id="tb-logo" title="Meu perfil">
       <span id="tb-logo-emoji" style="display:none">💑</span>
-      <img id="tb-logo-img" src="ajja.png" style="display:block" alt="">
+      <img id="tb-logo-img" src="https://via.placeholder.com/512.png" style="display:block" alt="">
     </div>
     <div class="tb-title" id="tb-title">Início</div>
     <div class="tb-right">
@@ -1031,7 +1031,7 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
 </div><!-- /scr-app -->
   <div class="app-prompt" id="app-prompt" onclick="installPWA()">
     <button class="close-app" onclick="event.stopPropagation();document.getElementById('app-prompt').style.display='none'">×</button>
-    <img src="ajja.png" style="width:20px;height:20px;border-radius:4px;object-fit:cover">
+    <img src="https://via.placeholder.com/512.png" style="width:20px;height:20px;border-radius:4px;object-fit:cover">
     <span>AJJA - Instalar APP</span>
   </div>
 
@@ -1120,6 +1120,7 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
 
 <script>
 /* ============================================================
@@ -1319,6 +1320,8 @@ function init(){
 
   // Step 3: try to sync from Firebase in the background (non-blocking)
   syncFromFirebase();
+  setupNotifications();
+
 
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW reg failed',e));
@@ -1445,6 +1448,15 @@ function setupRealtimeListeners(){
         const badge=document.getElementById('bn-chat-badge');
         const cur=parseInt(badge.dataset.count||'0');
         badge.dataset.count=String(cur+diff);
+        
+        // Notificação local para nova mensagem
+        const lastMsg = msgs[msgs.length-1];
+        if(lastMsg && lastMsg.u !== ME.u) {
+            new Notification('Nova mensagem de ' + (D.users[lastMsg.u]?.n || lastMsg.u), {
+                body: lastMsg.txt || 'Enviou algo novo!',
+                icon: 'ajja.png'
+            });
+        }
       }
       lastMsgCount=newCount;
     }
@@ -2141,7 +2153,16 @@ function compress(file,maxPx){
         if(maxPx&&(w>maxPx||h>maxPx)){
           const r=Math.min(maxPx/w,maxPx/h);
           w=Math.round(w*r);h=Math.round(h*r);
-        }
+function setupNotifications(){
+  if(!('Notification' in window)) return;
+  Notification.requestPermission().then(permission => {
+    if(permission === 'granted') {
+      console.log('Notificações permitidas');
+      // Aqui integraríamos com o FCM para receber o token
+    }
+  });
+}
+
         const cv=document.createElement('canvas');
         cv.width=w;cv.height=h;
         cv.getContext('2d').drawImage(img,0,0,w,h);
@@ -2296,7 +2317,19 @@ async function processAndSendAudio(){
 
 // Patch renderChat to support audio messages
 const _origRenderChat=renderChat;
-function renderChat(){
+function markMessagesAsRead(){
+  if(!ME || !D.messages) return;
+  let changed = false;
+  D.messages.forEach((m, i) => {
+    if(m.u !== ME.u && !m.seen) {
+      D.messages[i].seen = true;
+      changed = true;
+    }
+  });
+  if(changed) {
+    saveSection('messages');
+  }
+}
   const area=document.getElementById('chat-scroller');
   if(!D.messages||!D.messages.length){
     area.innerHTML='<div class="empty-state"><span class="es-icon">💬</span><p>Nenhuma mensagem.<br>Diga oi! 👋</p></div>';
@@ -2344,14 +2377,16 @@ function renderChat(){
       }
     }
 
-    return `${sep}<div class="msg-grp ${isMine?'me':'them'}">
-      ${!isMine?`<div class="msg-sender">${esc(sender)}</div>`:''}
-      <div class="msg-bubble" style="position:relative">
-        ${replyRef}${content}
-        <button class="reply-btn" onclick="setReply(${i})">↩</button>
-      </div>
-      <div class="msg-time">${time}</div>
-    </div>`;
+     return `${sep}<div class="msg-grp ${isMine?'me':'them'}">
+       ${!isMine?`<div class="msg-sender">${esc(sender)}</div>`:''}
+       <div class="msg-bubble" style="position:relative">
+         ${replyRef}${content}
+         <button class="reply-btn" onclick="setReply(${i})">↩</button>
+         ${isMine ? `<span style="font-size:10px;opacity:.6;margin-left:4px">${m.seen ? '✓✓' : '✓'} ${m.audio && m.played ? '🎧' : ''}</span>` : ''}
+       </div>
+       <div class="msg-time">${time}</div>
+     </div>`;
+
   }).join('');
   scrollChat();
 }
@@ -2381,11 +2416,19 @@ function playAudio(btn,index){
     if(_curWave) _curWave.classList.remove('playing');
   }
 
-  const audio=new Audio();
-  audio.src=src;
-  audio.load();
-  _curAudio=audio;_curBtn=btn;_curWave=wave;
-  btn.textContent='⏸';
+   const audio=new Audio();
+   audio.src=src;
+   audio.load();
+   _curAudio=audio;_curBtn=btn;_curWave=wave;
+   
+   // Marcar como escutado
+   if(index !== undefined) {
+     D.messages[index].played = true;
+     saveSection('messages');
+   }
+   
+   btn.textContent='⏸';
+
   if(wave) wave.classList.add('playing');
 
   audio.onended=()=>{
