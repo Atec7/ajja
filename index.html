@@ -544,6 +544,31 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);
   padding:2px;transition:transform .12s}
 .es-btn:hover{transform:scale(1.2)}
 .chat-input-row{display:flex;align-items:center;gap:8px}
+.reply-preview{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--bg4);padding:8px 12px;border-radius:12px 12px 0 0;
+  border-top:1px solid var(--border);font-size:13px;color:var(--text2);
+  animation:slideUp .2s ease;
+}
+.reply-preview .info{display:flex;flex-direction:column;gap:2px;overflow:hidden}
+.reply-preview .name{color:var(--gold);font-weight:600;font-size:11px}
+.reply-preview .txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.8}
+.reply-preview .close{cursor:pointer;opacity:.6;transition:opacity .2s}
+.reply-preview .close:hover{opacity:1}
+@keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+.msg-reply-ref{
+  background:rgba(0,0,0,.1);border-left:3px solid var(--gold);
+  padding:4px 8px;margin-bottom:6px;border-radius:4px;
+  font-size:12px;opacity:.8;cursor:pointer;
+}
+.msg-grp.them .msg-reply-ref{background:rgba(255,255,255,.05)}
+.reply-btn{
+  position:absolute;right:4px;top:4px;width:20px;height:20px;
+  background:var(--bg4);border:none;border-radius:4px;color:var(--text3);
+  cursor:pointer;display:none;font-size:10px;align-items:center;justify-content:center;
+}
+.msg-bubble:hover .reply-btn{display:flex}
 .chat-inp{
   flex:1;background:var(--bg3);border:1px solid var(--border);
   border-radius:24px;padding:11px 18px;color:var(--text);
@@ -565,6 +590,82 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);
   color:#0a0a0a;border-color:transparent;
 }
 .ci-send:hover{opacity:.85;color:#0a0a0a}
+
+/* Recording button states */
+.ci-mic{transition:all var(--trans)}
+.ci-mic.recording{
+  background:rgba(248,113,113,.18);
+  border-color:var(--red);
+  color:var(--red);
+  animation:micpulse 1s ease infinite;
+}
+@keyframes micpulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,0)}
+  50%{box-shadow:0 0 0 6px rgba(248,113,113,.25)}
+}
+
+/* Audio message bubble */
+.audio-msg{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;min-width:180px;
+}
+.audio-play-btn{
+  width:32px;height:32px;border-radius:50%;
+  border:none;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;transition:all .15s;
+}
+.msg-grp.me .audio-play-btn{
+  background:rgba(0,0,0,.15);color:#0a0a0a;
+}
+.msg-grp.them .audio-play-btn{
+  background:rgba(200,168,75,.18);color:var(--gold);
+}
+.audio-play-btn:hover{transform:scale(1.1)}
+.audio-wave{
+  flex:1;height:28px;display:flex;align-items:center;
+  gap:2px;overflow:hidden;
+}
+.audio-wave span{
+  display:inline-block;width:3px;border-radius:3px;
+  background:currentColor;opacity:.6;
+  animation:none;
+}
+.audio-wave.playing span{
+  animation:wavebar .8s ease infinite;
+}
+.audio-wave span:nth-child(1){height:8px;animation-delay:0s}
+.audio-wave span:nth-child(2){height:14px;animation-delay:.1s}
+.audio-wave span:nth-child(3){height:20px;animation-delay:.2s}
+.audio-wave span:nth-child(4){height:24px;animation-delay:.3s}
+.audio-wave span:nth-child(5){height:20px;animation-delay:.4s}
+.audio-wave span:nth-child(6){height:14px;animation-delay:.5s}
+.audio-wave span:nth-child(7){height:8px;animation-delay:.6s}
+.audio-wave span:nth-child(8){height:12px;animation-delay:.7s}
+.audio-wave span:nth-child(9){height:18px;animation-delay:.15s}
+.audio-wave span:nth-child(10){height:22px;animation-delay:.35s}
+.audio-wave span:nth-child(11){height:16px;animation-delay:.55s}
+.audio-wave span:nth-child(12){height:10px;animation-delay:.25s}
+@keyframes wavebar{
+  0%,100%{transform:scaleY(.4)}
+  50%{transform:scaleY(1)}
+}
+.audio-dur{font-size:10px;opacity:.7;white-space:nowrap;flex-shrink:0}
+
+/* Recording indicator in chat bar */
+.rec-indicator{
+  display:none;align-items:center;gap:8px;
+  padding:6px 12px;background:rgba(248,113,113,.1);
+  border:1px solid rgba(248,113,113,.3);
+  border-radius:50px;font-size:12px;color:var(--red);
+}
+.rec-indicator.on{display:flex}
+.rec-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--red);
+  animation:recdot 1s ease infinite;
+}
+@keyframes recdot{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* =============================================
    TIMELINE PAGE
@@ -680,7 +781,7 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
   <div class="login-wrap">
     <div class="brand-ring">💑</div>
     <div class="brand-name">AJJA</div>
-    <div class="brand-sub">nossa história</div>
+    <div class="brand-sub">Nossa história É linda demais pra </div>
     <div class="login-card">
       <div class="inp-group">
         <label class="lbl" for="li-u">Usuário</label>
@@ -822,11 +923,26 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
       <div class="chat-scroller" id="chat-scroller"></div>
       <div class="chat-bar">
         <div class="emoji-shelf" id="emoji-shelf"></div>
+        <div class="reply-preview hidden" id="reply-preview">
+          <div class="info">
+            <span class="name" id="rp-name"></span>
+            <span class="txt" id="rp-txt"></span>
+          </div>
+          <span class="close" onclick="cancelReply()">×</span>
+        </div>
+        <div id="chat-status-indicator" style="font-size:11px;color:var(--gold);text-align:center;height:14px;margin-bottom:4px;opacity:.8;font-style:italic"></div>
+        <div class="rec-indicator" id="rec-indicator">
+          <div class="rec-dot"></div>
+          <span id="rec-timer">0:00</span>
+          <span>Gravando...</span>
+          <button onclick="cancelRecording()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;margin-left:4px">×</button>
+        </div>
         <div class="chat-input-row">
           <button class="ci-btn" onclick="document.getElementById('ci-file').click()" title="Foto">📷</button>
           <input type="file" id="ci-file" accept="image/*" hidden>
           <button class="ci-btn" onclick="toggleEmoji()" title="Emojis">😀</button>
           <input class="chat-inp" id="chat-inp" placeholder="Mensagem..." type="text">
+          <button class="ci-btn ci-mic" id="ci-mic" onclick="toggleRecording()" title="Gravar áudio">🎙️</button>
           <button class="ci-btn ci-send" onclick="sendMsg()" title="Enviar">➤</button>
         </div>
       </div>
@@ -838,7 +954,7 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
         <div class="section-title"><span>Adicionar memória</span></div>
         <div style="display:flex;flex-direction:column;gap:8px">
           <input class="field-inp" id="tl-date" type="date">
-          <input class="field-inp" id="tl-title" placeholder="Título (ex: Primeiro encontro 💕)">
+          <input class="field-inp" id="tl-title" placeholder="Título💕">
           <input class="field-inp" id="tl-desc" placeholder="Descrição (opcional)">
           <button class="btn-s" onclick="addTimeline()">✨ Adicionar memória</button>
         </div>
@@ -951,7 +1067,7 @@ video.vid-direct{width:100%;max-height:60vh;display:block;background:#000}
       <button class="modal-x" onclick="closeOv('ov-date')">×</button>
     </div>
     <div class="modal-body">
-      <input class="field-inp" id="nd-name" placeholder="Nome (ex: Aniversário 💕)" style="margin-bottom:8px">
+      <input class="field-inp" id="nd-name" placeholder="Nome" style="margin-bottom:8px">
       <input class="field-inp" id="nd-date" type="date" style="margin-bottom:8px">
       <input class="field-inp" id="nd-icon" placeholder="Emoji (ex: 🎂)" style="margin-bottom:12px">
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:16px;cursor:pointer">
@@ -1022,6 +1138,10 @@ try{
 function fbSet(path,val){
   if(!db)return;
   db.ref(path).set(val).catch(e=>console.warn('fbSet',path,e.message));
+}
+function fbSetStatus(field,val){
+  if(!db||!ME)return;
+  db.ref('status/'+ME.u+'/'+field).set(val);
 }
 function fbOn(path,cb){
   if(!db)return;
@@ -1132,6 +1252,16 @@ function init(){
   document.getElementById('ci-file').onchange=onChatImg;
   document.getElementById('file-inp').onchange=onPhotoUpload;
 
+  let _typeTimer;
+  const chatInp=document.getElementById('chat-inp');
+  if(chatInp){
+    chatInp.oninput=()=>{
+      fbSetStatus('typing',true);
+      clearTimeout(_typeTimer);
+      _typeTimer=setTimeout(()=>fbSetStatus('typing',false),2000);
+    };
+  }
+
   // drag & drop on upload zone
   const uz=document.getElementById('upload-zone');
   uz.addEventListener('dragover',e=>{e.preventDefault();uz.style.borderColor='rgba(200,168,75,.6)'});
@@ -1203,13 +1333,17 @@ function doLogin(){
   }
 
   ME={u:userKey,...user};
-
-  // Update online status
-  saveUserField(userKey,'on',true);
-  saveUserField(userKey,'ls',null);
-
+  
+  // Online status & presence
+  if(db){
+    const presRef=db.ref('users/'+userKey);
+    presRef.onDisconnect().update({on:false,ls:firebase.database.ServerValue.TIMESTAMP});
+    presRef.update({on:true,ls:null});
+  }
+  
   // UI transition
   document.getElementById('scr-login').classList.add('gone');
+
   document.getElementById('scr-app').classList.remove('gone');
 
   // Set profile pic in topbar
@@ -1272,16 +1406,28 @@ function setupRealtimeListeners(){
     if(!snap.exists()) return;
     const users=snap.val();
     if(!users || typeof users!=='object') return;
-    Object.entries(users).forEach(([k,v])=>{
-      if(D.users[k]){
-        D.users[k].on=v.on;
-        D.users[k].ls=v.ls;
-        if(v.pic) D.users[k].pic=v.pic;
-        if(v.mood!==undefined) D.users[k].mood=v.mood;
-      }
-    });
+    D.users=users;
     saveLocal();
-    updateOtherStatus();
+    renderAll();
+  });
+
+  db.ref('status').on('value',snap=>{
+    const statuses=snap.val();
+    const el=document.getElementById('chat-status-indicator');
+    if(!el) return;
+    if(!statuses||!ME) {el.textContent='';return}
+    let txt='';
+    const others=Object.entries(statuses).filter(([uid])=>uid!==ME.u);
+    if(others.length>0){
+      const rec=others.find(([uid,s])=>s.recording);
+      if(rec){
+        txt=`${D.users[rec[0]]?.n||rec[0]} está gravando áudio... 🎙️`;
+      }else{
+        const typ=others.find(([uid,s])=>s.typing);
+        if(typ)txt=`${D.users[typ[0]]?.n||typ[0]} está digitando...`;
+      }
+    }
+    el.textContent=txt;
   });
 
   db.ref('wishes').on('value',snap=>{
@@ -1708,21 +1854,54 @@ function toggleEmoji(){
   document.getElementById('emoji-shelf').classList.toggle('open');
 }
 
+let replyIdx=null;
+function setReply(i){
+  replyIdx=i;
+  const m=D.messages[i];
+  const sender=D.users[m.u]?.n||m.u;
+  const txt=m.txt||(m.img?'📷 Imagem':'🎙️ Áudio');
+  document.getElementById('rp-name').textContent=sender;
+  document.getElementById('rp-txt').textContent=txt;
+  document.getElementById('reply-preview').classList.remove('hidden');
+  document.getElementById('chat-inp').focus();
+}
+function cancelReply(){
+  replyIdx=null;
+  document.getElementById('reply-preview').classList.add('hidden');
+}
+function scrollToMsg(i){
+  const area=document.getElementById('chat-scroller');
+  const el=area.children[i];
+  if(el){
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    el.style.backgroundColor='rgba(200,168,75,0.2)';
+    setTimeout(()=>el.style.backgroundColor='',1000);
+  }
+}
+
 function sendMsg(){
+  if(!ME) return;
   const txt=(document.getElementById('chat-inp').value||'').trim();
-  if(!txt||!ME) return;
-  pushMsg({txt,u:ME.u,ts:Date.now()});
+  if(!txt&&replyIdx===null) return;
+  const msg={txt,u:ME.u,ts:Date.now()};
+  if(replyIdx!==null) msg.replyTo=replyIdx;
+  pushMsg(msg);
   document.getElementById('chat-inp').value='';
   document.getElementById('emoji-shelf').classList.remove('open');
+  cancelReply();
 }
+
 async function onChatImg(e){
   const f=e.target.files[0];
   if(!f||!ME) return;
   toast('⏳ Enviando imagem...');
   const url=await compress(f,1000);
   if(url){
-    pushMsg({img:url,txt:'📷',u:ME.u,ts:Date.now()});
+    const msg={img:url,txt:'📷',u:ME.u,ts:Date.now()};
+    if(replyIdx!==null) msg.replyTo=replyIdx;
+    pushMsg(msg);
     toast('✅ Imagem enviada!');
+    cancelReply();
   }
   e.target.value='';
 }
@@ -1734,31 +1913,6 @@ function pushMsg(msg){
 }
 
 let _lastChatDate='';
-function renderChat(){
-  const area=document.getElementById('chat-scroller');
-  if(!D.messages||!D.messages.length){
-    area.innerHTML='<div class="empty-state"><span class="es-icon">💬</span><p>Nenhuma mensagem.<br>Diga oi! 👋</p></div>';
-    return;
-  }
-  _lastChatDate='';
-  area.innerHTML=D.messages.map((m,i)=>{
-    const isMine=m.u===ME?.u;
-    const time=m.ts?new Date(m.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
-    const dateStr=m.ts?new Date(m.ts).toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'}):'';
-    let sep='';
-    if(dateStr&&dateStr!==_lastChatDate){_lastChatDate=dateStr;sep=`<div class="chat-date-sep">${dateStr}</div>`}
-    const sender=D.users[m.u]?.n||m.u;
-    const content=m.img
-      ?`<img src="${m.img}" alt="imagem" onclick="window.open('${m.img}','_blank')">`
-      :esc(m.txt||'').replace(/\n/g,'<br>');
-    return `${sep}<div class="msg-grp ${isMine?'me':'them'}">
-      ${!isMine?`<div class="msg-sender">${esc(sender)}</div>`:''}
-      <div class="msg-bubble">${content}</div>
-      <div class="msg-time">${time}</div>
-    </div>`;
-  }).join('');
-  scrollChat();
-}
 function scrollChat(){
   const a=document.getElementById('chat-scroller');
   a.scrollTop=a.scrollHeight;
@@ -1791,7 +1945,7 @@ function delTimeline(i){
 function renderTimeline(){
   const el=document.getElementById('timeline-list');
   if(!D.timeline||!D.timeline.length){
-    el.innerHTML='<div class="empty-state"><span class="es-icon">⭐</span><p>Nenhuma memória ainda.<br>Registre os momentos especiais de vocês!</p></div>';
+    el.innerHTML='<div class="empty-state"><span class="es-icon">⭐</span><p>Nenhuma memória ainda!</p></div>';
     return;
   }
   el.innerHTML=[...D.timeline].reverse().map((t,i)=>{
@@ -1977,6 +2131,233 @@ function toast(msg,ms=2800){
   el.textContent=msg;el.classList.add('on');
   clearTimeout(_toastTimer);
   _toastTimer=setTimeout(()=>el.classList.remove('on'),ms);
+}
+
+/* ============================================================
+   AUDIO RECORDING
+   ============================================================ */
+let mediaRecorder=null;
+let audioChunks=[];
+let recTimerInterval=null;
+let recSeconds=0;
+let isRecording=false;
+
+async function toggleRecording(){
+  if(isRecording){
+    stopAndSendRecording();
+  } else {
+    await startRecording();
+  }
+}
+
+async function startRecording(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    toast('❌ Seu navegador não suporta gravação de áudio');return;
+  }
+  try{
+    fbSetStatus('recording',true);
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    // pick best supported format
+    const mimeType=['audio/mp4','audio/mpeg','audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus']
+      .find(t=>MediaRecorder.isTypeSupported(t))||'';
+    mediaRecorder=new MediaRecorder(stream,mimeType?{mimeType}:{});
+    audioChunks=[];
+    mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size>0)audioChunks.push(e.data)};
+    mediaRecorder.onstop=()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      if(audioChunks.length&&!_recCancelled) processAndSendAudio();
+      _recCancelled=false;
+    };
+    mediaRecorder.start(200);
+    isRecording=true;
+    recSeconds=0;
+    _recCancelled=false;
+
+    // UI
+    const btn=document.getElementById('ci-mic');
+    btn.classList.add('recording');
+    btn.textContent='⏹️';
+    document.getElementById('rec-indicator').classList.add('on');
+    document.getElementById('chat-inp').placeholder='Gravando áudio...';
+    document.getElementById('chat-inp').disabled=true;
+
+    recTimerInterval=setInterval(()=>{
+      recSeconds++;
+      const m=Math.floor(recSeconds/60);
+      const s=String(recSeconds%60).padStart(2,'0');
+      document.getElementById('rec-timer').textContent=m+':'+s;
+      // auto-stop at 2 minutes
+      if(recSeconds>=120) stopAndSendRecording();
+    },1000);
+
+  }catch(err){
+    if(err.name==='NotAllowedError'){
+      toast('🎙️ Permita o acesso ao microfone');
+    } else {
+      toast('❌ Erro ao acessar microfone: '+err.message);
+    }
+  }
+}
+
+let _recCancelled=false;
+
+function stopAndSendRecording(){
+  if(!mediaRecorder||mediaRecorder.state==='inactive') return;
+  fbSetStatus('recording',false);
+  clearInterval(recTimerInterval);
+  isRecording=false;
+  resetMicBtn();
+  mediaRecorder.stop();
+}
+
+function cancelRecording(){
+  if(!mediaRecorder||mediaRecorder.state==='inactive') return;
+  fbSetStatus('recording',false);
+  _recCancelled=true;
+  clearInterval(recTimerInterval);
+  isRecording=false;
+  resetMicBtn();
+  mediaRecorder.stop();
+  toast('🎙️ Gravação cancelada');
+}
+
+function resetMicBtn(){
+  const btn=document.getElementById('ci-mic');
+  btn.classList.remove('recording');
+  btn.textContent='🎙️';
+  document.getElementById('rec-indicator').classList.remove('on');
+  document.getElementById('chat-inp').placeholder='Mensagem...';
+  document.getElementById('chat-inp').disabled=false;
+}
+
+async function processAndSendAudio(){
+  if(!audioChunks.length) return;
+  toast('⏳ Enviando áudio...');
+  const blob=new Blob(audioChunks,{type:mediaRecorder.mimeType||'audio/webm'});
+  const ext=blob.type.includes('ogg')?'ogg':blob.type.includes('mp4')?'m4a':'webm';
+  // convert to base64
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const base64=ev.target.result; // full data URL
+    const dur=recSeconds;
+    pushMsg({audio:base64,dur,u:ME.u,ts:Date.now()});
+    toast('✅ Áudio enviado!');
+  };
+  reader.readAsDataURL(blob);
+}
+
+// Patch renderChat to support audio messages
+const _origRenderChat=renderChat;
+function renderChat(){
+  const area=document.getElementById('chat-scroller');
+  if(!D.messages||!D.messages.length){
+    area.innerHTML='<div class="empty-state"><span class="es-icon">💬</span><p>Nenhuma mensagem.<br>Diga oi! 👋</p></div>';
+    return;
+  }
+  let _ld='';
+  area.innerHTML=D.messages.map((m,i)=>{
+    const isMine=m.u===ME?.u;
+    const time=m.ts?new Date(m.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+    const dateStr=m.ts?new Date(m.ts).toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'}):'';
+    let sep='';
+    if(dateStr&&dateStr!==_ld){_ld=dateStr;sep=`<div class="chat-date-sep">${dateStr}</div>`}
+    const sender=D.users[m.u]?.n||m.u;
+
+    let content='';
+    if(m.audio){
+      const dur=m.dur||0;
+      const mm=Math.floor(dur/60);
+      const ss=String(dur%60).padStart(2,'0');
+      content=`<div class="audio-msg">
+        <button class="audio-play-btn" onclick="playAudio(this,${i})" data-src="${m.audio}">▶</button>
+        <div class="audio-wave" id="wave-${m.ts||i}">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <span class="audio-dur">${mm}:${ss}</span>
+      </div>`;
+    } else if(m.img){
+      content=`<img src="${m.img}" alt="imagem" onclick="window.open('${m.img}','_blank')">`;
+    } else {
+      content=esc(m.txt||'').replace(/\n/g,'<br>');
+    }
+
+    let replyRef='';
+    if(m.replyTo){
+      const rMsg=D.messages[m.replyTo];
+      if(rMsg){
+        const rSender=D.users[rMsg.u]?.n||rMsg.u;
+        const rTxt=rMsg.txt||(rMsg.img?'📷 Imagem':'🎙️ Áudio');
+        replyRef=`<div class="msg-reply-ref" onclick="scrollToMsg(${m.replyTo})">
+          <div style="font-weight:600;font-size:10px;color:var(--gold)">${esc(rSender)}</div>
+          <div style="opacity:.8;font-size:11px">${esc(rTxt).substring(0,50)}</div>
+        </div>`;
+      }
+    }
+
+    return `${sep}<div class="msg-grp ${isMine?'me':'them'}">
+      ${!isMine?`<div class="msg-sender">${esc(sender)}</div>`:''}
+      <div class="msg-bubble" style="position:relative">
+        ${replyRef}${content}
+        <button class="reply-btn" onclick="setReply(${i})">↩</button>
+      </div>
+      <div class="msg-time">${time}</div>
+    </div>`;
+  }).join('');
+  scrollChat();
+}
+// Global audio player — one at a time
+let _curAudio=null;
+let _curBtn=null;
+let _curWave=null;
+
+function playAudio(btn,index){
+  const msg=D.messages[index];
+  if(!msg||!msg.audio) return;
+  const src=msg.audio;
+  const wave=document.getElementById('wave-'+(msg.ts||index));
+
+
+  // if same audio playing — pause
+  if(_curAudio&&_curBtn===btn&&!_curAudio.paused){
+    _curAudio.pause();
+    btn.textContent='▶';
+    if(_curWave) _curWave.classList.remove('playing');
+    return;
+  }
+  // stop previous
+  if(_curAudio){
+    _curAudio.pause();
+    if(_curBtn) _curBtn.textContent='▶';
+    if(_curWave) _curWave.classList.remove('playing');
+  }
+
+  const audio=new Audio();
+  audio.src=src;
+  audio.load();
+  _curAudio=audio;_curBtn=btn;_curWave=wave;
+  btn.textContent='⏸';
+  if(wave) wave.classList.add('playing');
+
+  audio.onended=()=>{
+    btn.textContent='▶';
+    if(wave) wave.classList.remove('playing');
+    _curAudio=null;_curBtn=null;_curWave=null;
+  };
+  audio.onerror=()=>{
+    toast('❌ Erro ao reproduzir áudio');
+    btn.textContent='▶';
+    if(wave) wave.classList.remove('playing');
+  };
+  
+  const playPromise=audio.play();
+  if(playPromise!==undefined){
+    playPromise.catch(()=>{
+      toast('❌ Não foi possível reproduzir');
+      btn.textContent='▶';
+    });
+  }
 }
 
 /* ============================================================
